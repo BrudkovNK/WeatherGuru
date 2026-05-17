@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WeatherGuru</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.ico') }}">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Syne:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0d1117;
+  --bg-1: #161b22;
+  --bg-2: #21262d;
+  --border: #30363d;
+  --border-muted:#21262d;
+  --text: #e6edf3;
+  --text-muted: #7d8590;
+  --text-dim: #484f58;
+  --accent: #58a6ff;
+  --accent-dim: #1f4e8c;
+  --green: #3fb950;
+  --yellow: #d29922;
+  --orange: #db6d28;
+  --red: #f85149;
+  --purple: #bc8cff;
+  --mono: 'JetBrains Mono', monospace;
+  --sans: 'Syne', sans-serif;
+  --radius: 6px;
+  --radius-lg: 10px;
+}
+
+body {
+  font-family: var(--sans);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.5;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(var(--border-muted) 1px, transparent 1px),
+    linear-gradient(90deg, var(--border-muted) 1px, transparent 1px);
+  background-size: 40px 40px;
+  opacity: 0.35;
+  pointer-events: none;
+  z-index: 0;
+}
+
+header {
+  position: relative;
+  z-index: 1;
+  border-bottom: 1px solid var(--border);
+  background: rgba(13,17,23,0.95);
+  backdrop-filter: blur(12px);
+  padding: 0 2rem;
+}
+
+.header-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 60px;
+  gap: 1.5rem;
+}
+
+.logo {
+  display: flex;
+  align-items: baseline;
+  gap: .6rem;
+  flex-shrink: 0;
+}
+
+.logo-name {
+  font-family: var(--mono);
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--text);
+  letter-spacing: -.01em;
+}
+
+.logo-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: pulse 2.4s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: .4; transform: scale(.7); }
+}
+
+.header-meta {
+  font-family: var(--mono);
+  font-size: .72rem;
+  color: var(--text-muted);
+}
+
+.city-tabs {
+  display: flex;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.city-tab {
+  background: transparent;
+  color: var(--text-muted);
+  border: none;
+  padding: .45rem 1.2rem;
+  cursor: pointer;
+  font-family: var(--mono);
+  font-size: .75rem;
+  transition: background .15s, color .15s;
+  white-space: nowrap;
+}
+
+.city-tab + .city-tab {
+  border-left: 1px solid var(--border);
+}
+
+.city-tab:hover { background: var(--bg-2); color: var(--text); }
+.city-tab.active { background: var(--bg-2); color: var(--accent); }
+
+main {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem 2rem 4rem;
+  width: 100%;
+}
+
+.weather-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+  margin-bottom: 2.5rem;
+  padding: .75rem 1rem;
+  background: var(--bg-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  align-items: center;
+}
+
+.w-item {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  font-family: var(--mono);
+  font-size: .75rem;
+  color: var(--text-muted);
+  padding: .3rem .65rem;
+  border-radius: 4px;
+  border: 1px solid var(--border-muted);
+  background: var(--bg);
+  white-space: nowrap;
+}
+
+.w-label { color: var(--text-dim); }
+.w-val { color: var(--text); font-weight: 500; }
+.w-unit { color: var(--text-dim); font-size: .68rem; }
+
+.w-sep {
+  width: 1px;
+  height: 18px;
+  background: var(--border);
+  margin: 0 .2rem;
+}
+
+.section-head {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  margin-bottom: 1.25rem;
+}
+
+.section-head h2 {
+  font-family: var(--mono);
+  font-size: .7rem;
+  font-weight: 500;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.section-line {
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.risk-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: .75rem;
+  margin-bottom: 3rem;
+}
+
+.risk-card {
+  background: var(--bg-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: .6rem;
+  transition: border-color .15s, transform .15s;
+  cursor: default;
+}
+
+.risk-card:hover {
+  border-color: var(--accent-dim);
+  transform: translateY(-1px);
+}
+
+.risk-card .r-name {
+  font-size: .82rem;
+  color: var(--text-muted);
+  line-height: 1.3;
+  min-height: 2.4em;
+}
+
+.risk-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  margin-top: auto;
+  padding: .2rem .55rem;
+  border-radius: 4px;
+  font-family: var(--mono);
+  font-size: .7rem;
+  font-weight: 500;
+  width: fit-content;
+}
+
+.risk-badge::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: .9;
+}
+
+.badge-low { background: rgba(63,185,80,.12);  color: var(--green);  border: 1px solid rgba(63,185,80,.25); }
+.badge-below { background: rgba(63,185,80,.07);  color: #7dbb8e; border: 1px solid rgba(63,185,80,.15); }
+.badge-medium { background: rgba(210,153,34,.12); color: var(--yellow); border: 1px solid rgba(210,153,34,.25); }
+.badge-high { background: rgba(219,109,40,.12); color: var(--orange); border: 1px solid rgba(219,109,40,.25); }
+.badge-veryhigh { background: rgba(248,81,73,.12);  color: var(--red); border: 1px solid rgba(248,81,73,.25); }
+.badge-unknown { background: var(--bg-2); color: var(--text-dim); border: 1px solid var(--border); }
+
+.vote-wrap {
+  max-width: 780px;
+}
+
+.vote-card {
+  background: var(--bg-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+}
+
+.vote-desc {
+  font-size: .85rem;
+  color: var(--text-muted);
+  margin-bottom: 1.5rem;
+  line-height: 1.6;
+}
+
+.vote-desc strong { color: var(--text); }
+
+.vote-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: .82rem;
+  margin-bottom: 1.5rem;
+}
+
+.vote-table thead th {
+  font-family: var(--mono);
+  font-size: .68rem;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--text-dim);
+  padding: .5rem .75rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+
+.vote-table thead th:not(:first-child) { text-align: center; }
+
+.vote-table tbody tr {
+  border-bottom: 1px solid var(--border-muted);
+  transition: background .1s;
+}
+
+.vote-table tbody tr:last-child { border-bottom: none; }
+.vote-table tbody tr:hover { background: var(--bg-2); }
+
+.vote-table td {
+  padding: .55rem .75rem;
+  color: var(--text-muted);
+  vertical-align: middle;
+}
+
+.vote-table td.d-name { color: var(--text); }
+
+.vote-table td:not(:first-child) { text-align: center; }
+
+.vote-table label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.vote-table input[type=radio] { display: none; }
+
+.radio-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: 1.5px solid var(--border);
+  border-radius: 50%;
+  background: var(--bg);
+  transition: border-color .15s, background .15s;
+  font-size: .75rem;
+  color: transparent;
+}
+
+.vote-table input[type=radio]:checked + .radio-btn {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+  color: var(--accent);
+}
+
+.vote-table input[type=radio].r-yes:checked + .radio-btn { border-color: var(--green);  background: rgba(63,185,80,.15);  color: var(--green);  }
+.vote-table input[type=radio].r-no:checked + .radio-btn { border-color: var(--orange); background: rgba(219,109,40,.15); color: var(--orange); }
+.vote-table input[type=radio].r-none:checked + .radio-btn  { border-color: var(--border); background: var(--bg-2); color: var(--text-dim); }
+
+.radio-btn svg { width: 11px; height: 11px; fill: currentColor; }
+
+.btn-submit {
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .6rem 1.4rem;
+  background: var(--accent-dim);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: .8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background .15s, color .15s;
+}
+
+.btn-submit:hover { background: var(--accent); color: var(--bg); }
+.btn-submit:disabled { opacity: .4; cursor: not-allowed; }
+
+.vote-notice {
+  display: none;
+  margin-top: 1rem;
+  padding: .65rem 1rem;
+  border-radius: var(--radius);
+  font-family: var(--mono);
+  font-size: .78rem;
+}
+
+.vote-notice.ok { background: rgba(63,185,80,.1);  border: 1px solid rgba(63,185,80,.3);  color: var(--green); }
+.vote-notice.already { background: rgba(210,153,34,.1); border: 1px solid rgba(210,153,34,.3); color: var(--yellow); }
+
+footer {
+  position: relative;
+  z-index: 1;
+  border-top: 1px solid var(--border);
+  padding: .9rem 2rem;
+  text-align: center;
+  font-family: var(--mono);
+  font-size: .7rem;
+  color: var(--text-dim);
+}
+
+.hidden { display: none !important; }
+
+@media (max-width: 640px) {
+  .header-inner { flex-wrap: wrap; height: auto; padding: .75rem 0; gap: .75rem; }
+  .header-meta { display: none; }
+  main { padding: 1.25rem 1rem 3rem; }
+  .vote-table .col-label { display: none; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="logo">
+      <div class="logo-dot"></div>
+      <span class="logo-name">weather_guru</span>
+    </div>
+    <span class="header-meta">обновлено {{ spb_risks.get('date', '—') }}</span>
+    <div class="city-tabs">
+      <button class="city-tab active" onclick="switchCity('spb', this)">Saint-Petersburg</button>
+      <button class="city-tab"        onclick="switchCity('mos', this)">Moscow</button>
+    </div>
+  </div>
+</header>
+
+<main>
+
+  {# ── Weather strip ── #}
+  {% set weather_fields = [
+    ('temperature', '°C', 'Температура'),
+    ('wind_speed', 'км/ч', 'Ветер'),
+    ('humidity', '%', 'Влажность'),
+    ('absolute_humidity', 'г/м³', 'Абс. влажность'),
+    ('atm_pressure', 'гПа', 'Давление'),
+    ('uv_index', '', 'УФ-индекс'),
+    ('current_air_quality', 'AQI', 'Качество воздуха'),
+    ('no2', 'мкг/м³', 'NO₂'),
+    ('pm2_5', 'мкг/м³', 'PM2.5'),
+    ('pm10', 'мкг/м³', 'PM10'),
+    ('alder_pollen', 'зёрен/м³', 'Пыльца ольхи'),
+    ('birch_pollen', 'зёрен/м³', 'Пыльца березы'),
+    ('grass_pollen',  'зёрен/м³', 'Пыльца злаковых'),
+    ('mugwort_pollen', 'зёрен/м³', 'Пыльца полыни'),
+    ('olive_pollen', 'зёрен/м³', 'Оливковая пыльца'),
+    ('ragweed_pollen', 'зёрен/м³', 'Пыльца амброзии'),
+  ] %}
+
+  {% for code, w in [('spb', spb_weather), ('mos', mos_weather)] %}
+  <div class="weather-strip {% if code != 'spb' %}hidden{% endif %}" id="weather-{{ code }}">
+    {% for field, unit, label in weather_fields %}
+      {% set val = w.get(field) %}
+      {% if not loop.first %}<div class="w-sep"></div>{% endif %}
+      <div class="w-item">
+        <span class="w-label">{{ label }}</span>
+        <span class="w-val">{{ val | safe_round(1) if val is not none and val != '—' else '—' }}</span>
+        {% if unit %}<span class="w-unit">{{ unit }}</span>{% endif %}
+      </div>
+    {% endfor %}
+  </div>
+  {% endfor %}
+
+  {# ── Risk levels ── #}
+  {% set badge_class = {
+    'низкий':        'badge-low',
+    'ниже среднего': 'badge-below',
+    'средний':       'badge-medium',
+    'высокий':       'badge-high',
+    'очень высокий': 'badge-veryhigh',
+  } %}
+
+  {% set disease_labels = {
+    'arterial_hypertension':    'Артериальная гипертензия',
+    'ischemic_heart_disease':   'Ишемическая болезнь сердца',
+    'chronic_heart_failure':    'Хроническая сердечная недостаточность',
+    'bronchial_astma':          'Бронхиальная астма',
+    'copd':                     'ХОБЛ',
+    'allergic_rhinitis':        'Аллергический ринит',
+    'respiratory_infection':    'Респираторная инфекция',
+    'osteoarthritis_arthritis': 'Остеоартрит / Артрит',
+    'old_injuries':             'Старые травмы',
+    'migraine':                 'Мигрень',
+    'vvd':                      'ВСД',
+    'cons_stroke_brain_injury': 'Последствия инсульта / ЧМТ',
+    'eye_pain':                 'Боль в глазах',
+    'heat_stroke':              'Тепловой удар',
+    'hypothermia':              'Переохлаждение',
+  } %}
+
+  {% for code, risks in [('spb', spb_risks), ('mos', mos_risks)] %}
+  <div id="risks-{{ code }}" {% if code != 'spb' %}class="hidden"{% endif %}>
+    <div class="section-head">
+      <h2>Прогноз рисков</h2>
+      <div class="section-line"></div>
+    </div>
+    <div class="risk-grid">
+      {% for key in diseases %}
+      {% set level = risks.get(key, '—') %}
+      {% set cls = badge_class.get(level, 'badge-unknown') %}
+      <div class="risk-card">
+        <div class="r-name">{{ disease_labels.get(key, key) }}</div>
+        <span class="risk-badge {{ cls }}">{{ level }}</span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+
+  {# ── Vote ── #}
+  <div class="section-head">
+    <h2>Обратная связь</h2>
+    <div class="section-line"></div>
+  </div>
+
+  <div class="vote-wrap">
+    <div class="vote-card">
+      <p class="vote-desc">
+        Оцените, насколько прогноз совпал с вашим самочувствием сегодня. Это поможет корректировать систему.
+        Для каждого состояния выберите один вариант:
+        <strong>совпало</strong>, <strong>не совпало</strong> (вы часто подвергались болезни, но прогноз разошёлся)
+        или <strong>нет болезни</strong> (вариант по умолчанию). В сутки можно предоставить один ответ.
+      </p>
+
+      <table class="vote-table" id="vote-table">
+        <thead>
+          <tr>
+            <th>Состояние</th>
+            <th class="col-label">Совпало</th>
+            <th class="col-label">Не совпало</th>
+            <th class="col-label">Нет болезни</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for key in diseases %}
+          <tr>
+            <td class="d-name">{{ disease_labels.get(key, key) }}</td>
+            <td>
+              <label>
+                <input type="radio" class="r-yes" name="{{ key }}" value="совпало">
+                <span class="radio-btn">
+                  <svg viewBox="0 0 12 12"><path d="M2 6l3 3 5-5"/></svg>
+                </span>
+              </label>
+            </td>
+            <td>
+              <label>
+                <input type="radio" class="r-no" name="{{ key }}" value="не совпало">
+                <span class="radio-btn">
+                  <svg viewBox="0 0 12 12"><path d="M3 3l6 6M9 3l-6 6"/></svg>
+                </span>
+              </label>
+            </td>
+            <td>
+              <label>
+                <input type="radio" class="r-none" name="{{ key }}" value="нет болезни" checked>
+                <span class="radio-btn">
+                  <svg viewBox="0 0 12 12"><circle cx="6" cy="6" r="2"/></svg>
+                </span>
+              </label>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+      <button class="btn-submit" id="btn-submit" onclick="submitVote()">
+        Отправить
+      </button>
+      <div class="vote-notice ok"      id="vote-ok">Ответ сохранён. Спасибо 💚</div>
+      <div class="vote-notice already" id="vote-already">Сегодня вы уже оставили ответ. Ждём вас завтра!</div>
+    </div>
+  </div>
+
+</main>
+
+<footer>weather_guru &mdash; данные обновляются автоматически</footer>
+
+<script>
+  function getDeviceId() {
+    const key = 'wg_device_id';
+    let id = localStorage.getItem(key);
+    if (!id) {
+      id = 'dev_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+      localStorage.setItem(key, id);
+    }
+    return id;
+  }
+
+  let currentCity = 'Saint-Petersburg';
+
+  function switchCity(code, btn) {
+    ['weather-spb','weather-mos','risks-spb','risks-mos'].forEach(id =>
+      document.getElementById(id).classList.add('hidden')
+    );
+    document.getElementById('weather-' + code).classList.remove('hidden');
+    document.getElementById('risks-'   + code).classList.remove('hidden');
+    document.querySelectorAll('.city-tab').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentCity = code === 'spb' ? 'Saint-Petersburg' : 'Moscow';
+    hideNotices();
+  }
+
+  function hideNotices() {
+    document.getElementById('vote-ok').style.display = 'none';
+    document.getElementById('vote-already').style.display = 'none';
+  }
+
+  function submitVote() {
+    const btn = document.getElementById('btn-submit');
+    btn.disabled = true;
+    hideNotices();
+
+    const answers = {};
+    document.querySelectorAll('#vote-table tbody tr').forEach(row => {
+      const checked = row.querySelector('input[type=radio]:checked');
+      if (checked) answers[checked.name] = checked.value;
+    });
+
+    fetch('/vote', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        city: currentCity,
+        device_id: getDeviceId(),
+        answers,
+      })
+    })
+    .then(r => r.json())
+    .then(res => {
+      if (res.status === 'already_voted') {
+        document.getElementById('vote-already').style.display = 'block';
+      } else {
+        document.getElementById('vote-ok').style.display = 'block';
+      }
+      btn.disabled = false;
+    })
+    .catch(() => {
+      btn.disabled = false;
+      alert('Ошибка отправки. Попробуйте позже.');
+    });
+  }
+</script>
+</body>
+</html>
